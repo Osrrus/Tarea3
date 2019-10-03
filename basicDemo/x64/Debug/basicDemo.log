@@ -1,0 +1,2 @@
+﻿  glad.c
+C:\Users\Alejandro\Desktop\Proyectos\Uni\Graficas 2\basicDemo(Windows-VS2017)\basicDemo\glad.c(25,10): error C1083:  No se puede abrir el archivo incluir: 'glad/glad.h': No such file or directory
