@@ -26,6 +26,12 @@ unsigned int frameBufferBackFace,textureBackFace;
 
 glm::mat4 projection,model;
 
+bool pressLeft;
+int pressMenu;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void onMouseButton(GLFWwindow* window, int button, int action, int mods);
+
 bool createBuffers(){
 
     glGenFramebuffers(1,&frameBufferBackFace);
@@ -78,7 +84,7 @@ bool initWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     // Creates the window
     window = glfwCreateWindow(windowWidth, windowHeight, windowTitle, NULL, NULL);
 
@@ -92,7 +98,8 @@ bool initWindow()
 
     // Creates the glfwContext, this has to be made before calling initGlad()
     glfwMakeContextCurrent(window);
-
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, onMouseButton);
     // Window resize callback
     glfwSetFramebufferSizeCallback(window, resize);
     return true;
@@ -121,10 +128,12 @@ void initGL()
 {
     // Enables the z-buffer test
     glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // Sets the ViewPort
     glViewport(0, 0, windowWidth, windowHeight);
     // Sets the clear color
-    glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 }
 /**
  * Builds all the geometry buffers and
@@ -185,63 +194,7 @@ void buildGeometry()
     // Position
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-    glBindVertexArray(0);
-}
-/**
- * Loads a texture into the GPU
- * @param{const char} path of the texture file
- * @returns{unsigned int} GPU texture index
- * */
-unsigned int loadTexture(const char *path)
-{
-    unsigned int id;
-    // Creates the texture on GPU
-    glGenTextures(1, &id);
-    // Loads the texture
-    int textureWidth, textureHeight, numberOfChannels;
-    // Flips the texture when loads it because in opengl the texture coordinates are flipped
-    stbi_set_flip_vertically_on_load(true);
-    // Loads the texture file data
-    unsigned char *data = stbi_load(path, &textureWidth, &textureHeight, &numberOfChannels, 0);
-    if (data)
-    {
-        // Gets the texture channel format
-        GLenum format;
-        switch (numberOfChannels)
-        {
-        case 1:
-            format = GL_RED;
-            break;
-        case 3:
-            format = GL_RGB;
-            break;
-        case 4:
-            format = GL_RGBA;
-            break;
-        }
-
-        // Binds the texture
-        glBindTexture(GL_TEXTURE_2D, id);
-        // Creates the texture
-        glTexImage2D(GL_TEXTURE_2D, 0, format, textureWidth, textureHeight, 0, format, GL_UNSIGNED_BYTE, data);
-        // Creates the texture mipmaps
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Set the filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
-    else
-    {
-        std::cout << "ERROR:: Unable to load texture " << path << std::endl;
-        glDeleteTextures(1, &id);
-    }
-    // We dont need the data texture anymore because is loaded on the GPU
-    stbi_image_free(data);
-
-    return id;
+    //glBindVertexArray(0);
 }
 /**
  * Initialize everything
@@ -250,7 +203,7 @@ unsigned int loadTexture(const char *path)
 bool init()
 {
     // Initialize the window, and the glad components
-    if (!initWindow() || !initGlad())
+    if (!initWindow() || !initGlad() || !createBuffers())
         return false;
 
     // Initialize the opengl context
@@ -323,7 +276,7 @@ void renderBackFace(){
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 
-    projection = glm::perspective(glm::radians(90.0f), (float)windowWidth / (float)windowHeight,0.1f,100.0f);
+    projection = glm::perspective(glm::radians(60.0f), (float)windowWidth / (float)windowHeight,0.001f,100.0f);
 
     shader->use();
 
@@ -345,7 +298,7 @@ void render()
     glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    projection = glm::perspective(glm::radians(90.0f), (float)windowWidth / (float)windowHeight,0.1f,100.0f);
+    projection = glm::perspective(glm::radians(60.0f), (float)windowWidth / (float)windowHeight,0.001f,100.0f);
     /** Draws code goes here **/
     // Use the shader
     raycastShader->use();
@@ -353,15 +306,19 @@ void render()
     raycastShader->setMat4("View",camera->getWorlToViewMatrix());
     raycastShader->setMat4("Projection",projection);
     // Binds the vertex array to be drawn
-    raycastShader->setInt("texVolume",0);
-    raycastShader->setInt("texRender",1);
+    // raycastShader->setInt("texVolume",0);
+    // raycastShader->setInt("texRender",1);
 
     raycastShader->setVec2("wSize",glm::vec2(windowWidth,windowHeight));
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_3D,volume->volumeId);
     glActiveTexture(GL_TEXTURE1);
+    glUniform1i(glGetUniformLocation(raycastShader->ID, "texRender"), 1);
     glBindTexture(GL_TEXTURE_2D,textureBackFace);
+
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(glGetUniformLocation(raycastShader->ID, "texVolume"), 0);
+	glBindTexture(GL_TEXTURE_3D, volume->volumeId);
+
 
     glBindVertexArray(VAO);
     // Renders the triangle gemotry
@@ -427,4 +384,32 @@ int main(int argc, char const *argv[])
     glfwTerminate();
 
     return 0;
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+
+	if (pressLeft) {
+		camera->mouseUpdate(glm::vec2(xpos, ypos));
+	}
+
+	TwMouseMotion(static_cast<int>(xpos), static_cast<int>(ypos));
+}
+
+void onMouseButton(GLFWwindow* window, int button, int action, int mods)
+{
+	auto a = action == GLFW_PRESS ? TW_MOUSE_PRESSED : TW_MOUSE_RELEASED;
+	auto b = TW_MOUSE_LEFT;
+
+	//pressMenu = TwMouseButton(a, b);
+	//std::cout << "hola" << std::endl;
+
+	if (a) {
+
+		pressLeft = true;
+
+	}
+	else {
+		pressLeft = false;
+	}
+
 }
