@@ -42,24 +42,32 @@ void main(){
     endColor.a = 1.0f;
     FragColor = endColor;*/
 
-    vec4 fragEnd = vec4(vec3(0.0f),1.0f);
+    vec4 endColor = vec4(0.0f,0.0f,0.0f,1.0f);
+    vec3 rayStep;
+
 	vec2 coord = (gl_FragCoord.xy) / wSize;
 	vec3 rayDir = vec3(texture(texRender,coord).xyz - offsetPos);
-	vec3 rayIn = offsetPos;
+
+	vec3 rayStar = offsetPos;
 	float max = length(rayDir);
+    
 	rayDir = normalize(rayDir);
     float step=1.0f/255;
-    vec3 stepMove;
 
 	for(float i=0.0f;i<max;i+=step){
-		stepMove= texture(texVolume,rayIn).r * vec3(texture(texVolume,rayIn).r);
-		stepMove *=fragEnd.a;
-        fragEnd.rgb +=stepMove;
-		fragEnd.a *= 1 - texture(texVolume,rayIn).r;
-		if(1-fragEnd.a >= 0.99f) break;
-		rayIn += rayDir*step;
+
+		rayStep= texture(texVolume,rayStar).r * vec3(texture(texVolume,rayStar).r);
+		rayStep *=endColor.a;
+
+        endColor.rgb +=rayStep;
+		endColor.a *= 1 - texture(texVolume,rayStar).r;
+
+		if(1-endColor.a >= 0.99f) break;
+
+		rayStar += rayDir*step;
 	}
-	fragEnd.a = 1.0f;
-	FragColor = fragEnd;
+
+	endColor.a = 1.0f;
+	FragColor = endColor;
     
 }
