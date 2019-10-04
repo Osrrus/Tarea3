@@ -22,7 +22,7 @@ unsigned int VBO;
 // Index (GPU) vertex array object
 unsigned int VAO;
 // Index (GPU) of the texture
-unsigned int textureID,frameBufferBackFace,textureBackFace;
+unsigned int frameBufferBackFace,textureBackFace;
 
 glm::mat4 projection,model;
 
@@ -51,27 +51,6 @@ bool createBuffers(){
     }
 
     return true;
-}
-
-void renderBackFace(){
-
-    glBindFramebuffer(GL_FRAMEBUFFER,frameBufferBackFace);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-
-    projection = glm::perspective(glm::radians(90.0f), (float)windowWidth / (float)windowHeight,0.1f,100.0f);
-
-    shader->use();
-
-    shader->setMat4("Model",model);
-    shader->setMat4("View",camera->getWorlToViewMatrix());
-    shader->setMat4("Projection",projection);
-
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES,0,36);
-    glBindVertexArray(0);
-    glCullFace(GL_BACK);
 }
 
 /**
@@ -155,54 +134,42 @@ void initGL()
 void buildGeometry()
 {
     float triangleVertices[] = {
-		//1
-        -0.5f,-0.5f,-0.5f,
-        -0.5f,-0.5f, 0.5f,
-        -0.5f, 0.5f, 0.5f,
-		//2
-        0.5f, 0.5f,-0.5f,
-        -0.5f,-0.5f,-0.5f,
-        -0.5f, 0.5f,-0.5f,
-		//3
-        0.5f,-0.5f, 0.5f,
-        -0.5f,-0.5f,-0.5f,
-        0.5f,-0.5f,-0.5f,
-		//4
-        0.5f, 0.5f,-0.5f,
-        0.5f,-0.5f,-0.5f,
-        -0.5f,-0.5f,-0.5f,
-		//5
-        -0.5f,-0.5f,-0.5f,
-        -0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f,-0.5f,
-		//6
-        0.5f,-0.5f, 0.5f,
-        -0.5f,-0.5f, 0.5f,
-        -0.5f,-0.5f,-0.5f,
-		//7
-        -0.5f, 0.5f, 0.5f,
-        -0.5f,-0.5f, 0.5f,
-        0.5f,-0.5f, 0.5f,
-		//8
-        0.5f, 0.5f, 0.5f,
-        0.5f,-0.5f,-0.5f,
-        0.5f, 0.5f,-0.5f,
-		//9
-        0.5f,-0.5f,-0.5f,
-        0.5f, 0.5f, 0.5f,
-        0.5f,-0.5f, 0.5f,
-		//10
-        0.5f, 0.5f, 0.5f,
-        0.5f, 0.5f,-0.5f,
-        -0.5f, 0.5f,-0.5f,
-		//11
-        0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f,-0.5f,
-        -0.5f, 0.5f, 0.5f,
-		//12
-        0.5f, 0.5f, 0.5f,
-        -0.5f, 0.5f, 0.5f,
-        0.5f,-0.5f, 0.5f
+		-0.5f,-0.5f,-0.5f,
+	-0.5f,-0.5f, 0.5f,
+	-0.5f, 0.5f, 0.5f,
+	 0.5f, 0.5f,-0.5f,
+	-0.5f,-0.5f,-0.5f,
+	-0.5f, 0.5f,-0.5f,
+	 0.5f,-0.5f, 0.5f,
+	-0.5f,-0.5f,-0.5f,
+	 0.5f,-0.5f,-0.5f,
+	 0.5f, 0.5f,-0.5f,
+	 0.5f,-0.5f,-0.5f,
+	-0.5f,-0.5f,-0.5f,
+	-0.5f,-0.5f,-0.5f,
+	-0.5f, 0.5f, 0.5f,
+	-0.5f, 0.5f,-0.5f,
+	 0.5f,-0.5f, 0.5f,
+	-0.5f,-0.5f, 0.5f,
+	-0.5f,-0.5f,-0.5f,
+	-0.5f, 0.5f, 0.5f,
+	-0.5f,-0.5f, 0.5f,
+	 0.5f,-0.5f, 0.5f,
+	 0.5f, 0.5f, 0.5f,
+	 0.5f,-0.5f,-0.5f,
+	 0.5f, 0.5f,-0.5f,
+	 0.5f,-0.5f,-0.5f,
+	 0.5f, 0.5f, 0.5f,
+	 0.5f,-0.5f, 0.5f,
+	 0.5f, 0.5f, 0.5f,
+	 0.5f, 0.5f,-0.5f,
+	-0.5f, 0.5f,-0.5f,
+	 0.5f, 0.5f, 0.5f,
+	-0.5f, 0.5f,-0.5f,
+	-0.5f, 0.5f, 0.5f,
+	 0.5f, 0.5f, 0.5f,
+	-0.5f, 0.5f, 0.5f,
+	 0.5f,-0.5f, 0.5f
     };
     // Creates on GPU the vertex array
     glGenVertexArrays(1, &VAO);
@@ -298,7 +265,6 @@ bool init()
     // Loads all the geometry into the GPU
     buildGeometry();
     // Loads the texture into the GPU
-    textureID = loadTexture("assets/textures/bricks2.jpg");
     volume = new Volume("volumen/dataSet/bonsai_256x256x256_uint8.raw");
 
     return true;
@@ -348,10 +314,33 @@ void processKeyboardInput(GLFWwindow *window)
 /**
  * Render Function
  * */
+
+void renderBackFace(){
+
+    glBindFramebuffer(GL_FRAMEBUFFER,frameBufferBackFace);
+    // glBindFramebuffer(GL_FRAMEBUFFER,0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    projection = glm::perspective(glm::radians(90.0f), (float)windowWidth / (float)windowHeight,0.1f,100.0f);
+
+    shader->use();
+
+    shader->setMat4("Model",model);
+    shader->setMat4("View",camera->getWorlToViewMatrix());
+    shader->setMat4("Projection",projection);
+
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES,0,36);
+    glBindVertexArray(0);
+    glCullFace(GL_BACK);
+}
+
 void render()
 {
 
-    renderBackFace();
+    
     // Clears the color and depth buffers from the frame buffer
     glBindFramebuffer(GL_FRAMEBUFFER,0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -372,14 +361,14 @@ void render()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D,volume->volumeId);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_3D,textureBackFace);
+    glBindTexture(GL_TEXTURE_2D,textureBackFace);
 
     glBindVertexArray(VAO);
     // Renders the triangle gemotry
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
     // Swap the buffer
-    glfwSwapBuffers(window);
+   
 }
 /**
  * App main loop
@@ -392,9 +381,12 @@ void update()
         // Checks for keyboard inputs
         processKeyboardInput(window);
 
+        renderBackFace();
+
         // Renders everything
         render();
 
+        glfwSwapBuffers(window);
         // Check and call events
         glfwPollEvents();
     }
@@ -423,14 +415,14 @@ int main(int argc, char const *argv[])
     update();
 
     // Deletes the texture from the gpu
-    glDeleteTextures(1, &textureID);
     // Deletes the vertex array from the GPU
     glDeleteVertexArrays(1, &VAO);
     // Deletes the vertex object from the GPU
     glDeleteBuffers(1, &VBO);
     // Destroy the shader
     delete shader;
-
+    delete raycastShader;
+    delete volume;
     // Stops the glfw program
     glfwTerminate();
 
